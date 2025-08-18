@@ -1,29 +1,16 @@
-# HeyGen Streaming SDK for Python
+# HeyGen Content SDK (Async) for Python
 
-An asynchronous Python client for interacting with the HeyGen Streaming API, designed for high-performance and reliability.
+Asynchronous, typed utilities for the HeyGen Content REST APIs (v1 + v2). Provides:
 
-## Features
-
-- Full async/await support
-- Type hints throughout
-- Pydantic models for request/response validation
-- Environment-based configuration
-- Singleton client instance
-- Built-in error handling
-
-## Installation
-
-```bash
-# Using pip
-pip install heygen-streaming-sdk
-
-# Using poetry
-poetry add heygen-streaming-sdk
-```
+- Full async/await via httpx
+- Pydantic schemas per-route for validation
+- Centralized error mapping and auth via a shared HTTP helper (`api/_http.py`)
+- Environment-based configuration (`config.py`) and `.env.example`
+- Lightweight REST client (`rest_client.py`) and thin singleton client (`client.py`)
 
 ## Configuration
 
-Configuration is handled through environment variables. Create a `.env` file in your project root:
+Configure via environment variables (or a `.env` file):
 
 ```bash
 HEYGEN_API_KEY=your_api_key_here
@@ -31,108 +18,85 @@ HEYGEN_BASE_URL=https://api.heygen.com/v1
 HEYGEN_TIMEOUT=30
 ```
 
-Or set them in your environment:
+See `heygen_content/.env.example` for a template.
 
-```bash
-export HEYGEN_API_KEY=your_api_key_here
-export HEYGEN_BASE_URL=https://api.heygen.com/v1
-export HEYGEN_TIMEOUT=30
-```
-
-## Usage
-
-### Basic Usage
+Access configuration at runtime:
 
 ```python
-from heygen_streaming import client
-
-async def create_streaming_session():
-    # The client is a singleton, so you can import and use it directly
-    session = await client.create_session(
-        # Your session configuration here
-    )
-    return session
+from backend.app.core.third_party_integrations.heygen_content.config import config
+print(config.BASE_URL, config.TIMEOUT)
 ```
 
-### Using with FastAPI
+## Usage Patterns
+
+### 1) Per-route utilities (recommended)
+Each endpoint has a small, focused function using the shared HTTP helper.
 
 ```python
-from fastapi import FastAPI, Depends
-from heygen_streaming import client, config
-
-app = FastAPI()
-
-@app.get("/create-session")
-async def create_session():
-    """Create a new streaming session."""
-    try:
-        session = await client.create_session(
-            # Your session configuration here
-        )
-        return {"session_id": session.id}
-    except Exception as e:
-        return {"error": str(e)}, 500
+from backend.app.core.third_party_integrations.heygen_content.api.v2 import list_supported_languages
+langs = await list_supported_languages()
+print(langs.languages)
 ```
 
-## API Reference
-
-### `HeyGenStreamingClient`
-
-The main client class for interacting with the HeyGen Streaming API.
-
-#### Methods
-
-- `create_session(request: NewSessionRequest) -> NewSessionResponse`: Create a new streaming session.
-- `start()`: Initialize the HTTP client.
-- `close()`: Close the HTTP client.
-
-### Configuration
-
-Configuration is available through the `config` object:
+More examples:
 
 ```python
-from heygen_streaming.config import config
+from backend.app.core.third_party_integrations.heygen_content.api.v1 import (
+    list_folders, create_folder, update_folder, trash_folder, restore_folder,
+)
+from backend.app.core.third_party_integrations.heygen_content.api.v1.schemas import (
+    CreateFolderRequest, UpdateFolderRequest,
+)
 
-print(f"Using API base URL: {config.BASE_URL}")
+resp = await list_folders(limit=10)
+created = await create_folder(CreateFolderRequest(name="My Folder"))
+updated = await update_folder(created.data["id"], UpdateFolderRequest(name="Renamed"))
+await trash_folder(updated.data["id"]) 
+await restore_folder(updated.data["id"]) 
+```
+
+### 2) REST client (generic)
+Use `HeyGenRESTClient` for generic calls when a utility isn’t available.
+
+```python
+from backend.app.core.third_party_integrations.heygen_content.rest_client import HeyGenRESTClient
+from backend.app.core.third_party_integrations.heygen_content.api.v1.schemas import ListFoldersResponse
+
+async with HeyGenRESTClient() as rc:
+    res = await rc._request("GET", "/v1/folders", ListFoldersResponse)
+    print(res)
+```
+
+### 3) Thin singleton client
+The `client.py` file exposes a thin content client using the same configuration and error mapping.
+
+```python
+from backend.app.core.third_party_integrations.heygen_content.client import client
+from backend.app.core.third_party_integrations.heygen_content.api.v2.schemas import RemainingQuotaResponse
+
+res = await client.request("GET", "/v2/user/remaining_quota", RemainingQuotaResponse)
+print(res.remaining_quota)
 ```
 
 ## Error Handling
 
-The SDK provides the following exceptions:
+Common exceptions (from `api/_exceptions.py`) are raised consistently:
 
-- `HeyGenAPIError`: Base exception for all API errors
-- `AuthenticationError`: Raised for authentication failures
-- `ValidationError`: Raised for request/response validation failures
+- `AuthenticationError`
+- `PermissionDeniedError`
+- `NotFoundError`
+- `RateLimitError`, `QuotaLimitError`, `CreditNotEnoughError`
+- `HeyGenValidationError`
+- `ServerError`
+- `HeyGenAPIError` (fallback)
 
 ## Development
 
-### Setup
-
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   poetry install
-   ```
-3. Create a `.env` file based on `.env.example`
-
-### Testing
-
-Run the test suite:
+1. Copy `.env.example` to `.env` and fill in values
+2. Run tests:
 
 ```bash
-pytest tests/
-```
-
-### Linting
-
-```bash
-ruff check .
-```
-
-### Formatting
-
-```bash
-black .
+pytest backend/app/core/third_party_integrations/heygen_content/_tests -q
 ```
 
 ## License
