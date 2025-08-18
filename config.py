@@ -1,4 +1,4 @@
-"""Configuration for HeyGen Streaming API integration."""
+"""Configuration for HeyGen Content API integration."""
 
 from functools import lru_cache
 from pydantic import Field
@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class HeyGenStreamingConfig(BaseSettings):
-    """Configuration for HeyGen Streaming API.
+    """Configuration for HeyGen Content API.
     
     Loads settings from environment variables with the prefix 'HEYGEN_'.
     """
@@ -33,7 +33,7 @@ class HeyGenStreamingConfig(BaseSettings):
 
 @lru_cache()
 def get_config() -> HeyGenStreamingConfig:
-    """Get cached HeyGen Streaming configuration.
+    """Get cached HeyGen Content configuration.
     
     Returns:
         HeyGenStreamingConfig: The configuration instance

@@ -1,12 +1,13 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="heygen-streaming",
+    name="heygen-content",
     version="0.1.0",
-    packages=find_packages(include=["heygen_streaming*"]),
+    packages=find_packages(include=["backend.app.core.third_party_integrations.heygen_content*", "heygen_content*"]),
     install_requires=[
         "httpx>=0.24.0",
         "pydantic>=2.0.0",
+        "pydantic-settings>=2.0.0",
     ],
     extras_require={
         "test": [
