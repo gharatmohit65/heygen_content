@@ -7,10 +7,13 @@ from typing import Any, TypeVar
 import httpx
 from pydantic import BaseModel
 
-from .api._exceptions import (
+from .api.streaming._exceptions import (
     AuthenticationError,
     HeyGenAPIError,
     HeyGenValidationError,
+    NotFoundError,
+    RateLimitError,
+    ServerError,
 )
 from .api.streaming.new_sessions import NewSessionRequest, NewSessionResponse
 from .api.streaming.send_task import SendTaskRequest, TaskResponse
@@ -67,7 +70,7 @@ class HeyGenStreamingClient:
                 headers={
                     "Accept": "application/json",
                     "Content-Type": "application/json",
-                    "X-API-Key": self.api_key,
+                    "X-Api-Key": self.api_key,
                 },
             )
 
@@ -91,20 +94,81 @@ class HeyGenStreamingClient:
         try:
             response = await self._client.request(method, endpoint, **kwargs)
 
-            # Handle authentication errors
-            if response.status_code == 401:
-                raise AuthenticationError("Invalid API key")
+            # Fast-path for success
+            if 200 <= response.status_code < 300:
+                try:
+                    data = response.json()
+                    return response_model.model_validate(data)
+                except Exception as e:
+                    raise HeyGenValidationError(f"Invalid response: {e}") from e
 
-            response.raise_for_status()
-
-            # Parse and validate response
+            # Error path: map HeyGen errors to SDK exceptions
+            error_payload = {}
             try:
-                data = response.json()
-                return response_model.model_validate(data)
-            except Exception as e:
-                raise HeyGenValidationError(f"Invalid response: {e}") from e
+                error_payload = response.json() or {}
+            except Exception:
+                # Non-JSON error body
+                error_payload = {}
+
+            code = error_payload.get("code")
+            message = error_payload.get("message") or response.text or "HeyGen API error"
+
+            # Authentication
+            if response.status_code == 401 or code in {40009, 400112, 401057, 401056}:
+                raise AuthenticationError(message or "Invalid API key")
+
+            # Permission/Forbidden
+            if response.status_code == 403 or code in {400573, 400562, 400578}:
+                from .api.streaming._exceptions import PermissionDeniedError
+
+                raise PermissionDeniedError(message or "Access forbidden")
+
+            # Not found
+            if response.status_code == 404 or code in {40051, 400179, 400114, 404003, 404001, 400174, 400144}:
+                raise NotFoundError(message or "Resource not found")
+
+            # Rate limiting / quota
+            if response.status_code == 429 or code in {400140, 10007, 10015}:
+                raise RateLimitError(message or "Rate limit exceeded")
+            if code in {401029, 40019}:
+                from .api.streaming._exceptions import QuotaLimitError
+
+                raise QuotaLimitError(message or "Quota limit reached")
+
+            # Credits
+            if code in {400118}:
+                from .api.streaming._exceptions import CreditNotEnoughError
+
+                raise CreditNotEnoughError(message or "Insufficient credits")
+
+            # Validation / bad request
+            if response.status_code == 400 or code in {
+                40001,
+                400175,
+                40012,
+                40065,
+                40039,
+                400105,
+                40010,
+                40031,
+                40044,
+                40072,
+            }:
+                raise HeyGenValidationError(message or "Invalid request data", details=error_payload)
+
+            # Server errors
+            if 500 <= response.status_code < 600 or code in {500000}:
+                raise ServerError(message or "Internal server error")
+
+            # Fallback
+            raise HeyGenAPIError(
+                message or "HeyGen API error",
+                status_code=response.status_code,
+                details=error_payload,
+            )
 
         except httpx.HTTPStatusError as e:
+            # httpx already considered this an error; provide a readable message
             raise HeyGenAPIError(
                 f"HTTP error: {e.response.text}",
                 status_code=e.response.status_code,

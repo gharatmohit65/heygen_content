@@ -58,3 +58,21 @@ class SessionNotFoundError(NotFoundError):
     def __init__(self, message: str = "Streaming session not found or no longer active"):
         super().__init__(message=message)
 
+
+class PermissionDeniedError(HeyGenAPIError):
+    """Raised when access is forbidden (insufficient permissions)."""
+    def __init__(self, message: str = "Access forbidden"):
+        super().__init__(message=message, status_code=403)
+
+
+class QuotaLimitError(HeyGenAPIError):
+    """Raised when the plan quota or usage limit is reached."""
+    def __init__(self, message: str = "Quota limit reached"):
+        super().__init__(message=message, status_code=429)
+
+
+class CreditNotEnoughError(HeyGenAPIError):
+    """Raised when the account does not have enough credits."""
+    def __init__(self, message: str = "Insufficient credits"):
+        super().__init__(message=message, status_code=402)
+

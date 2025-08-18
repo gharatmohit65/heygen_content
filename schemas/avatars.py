@@ -10,4 +10,4 @@ class Avatar(BaseModel):
 
 class AvatarListResponse(BaseModel):
     """The response model for a list of avatars."""
-    data: List[Avatar] = Field(..sad., description="A list of available avatars.")
+    data: List[Avatar] = Field(..., description="A list of available avatars.")
